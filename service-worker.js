@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gymlog-v3-cache';
+const CACHE_NAME = 'gymlog-v4-cache';
 const APP_FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_FILES)).then(() => self.skipWaiting()));
