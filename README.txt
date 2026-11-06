@@ -1,8 +1,7 @@
-# GymLog
-Personlig träningsdagbok som kan installeras på iPhone.
+GymLog – träningsprogram
 
-## Publicering
-Ladda upp alla filer i denna mapp till roten av GitHub-repositoryt `gymlog`. Aktivera sedan GitHub Pages från Settings → Pages → Deploy from a branch → main → /(root).
+Ladda upp filerna i ZIP-filen direkt i roten av GitHub-repositoryt och ersätt befintliga filer.
 
-## Integritet och backup
-Träningsuppgifter sparas lokalt i webbläsarens IndexedDB på enheten. De skickas inte till GitHub. Exportera regelbundet en JSON-backup under Profil → Säkerhetskopia. GitHub-repositoryts appkod är offentlig eftersom GitHub Free Pages används med ett publikt repository.
+Ny funktion: skapa, redigera, starta och ta bort egna träningsprogram. Programmen sparas lokalt tillsammans med övriga GymLog-data. Tidigare träningspass och vikthistorik bevaras.
+
+Efter uppladdning: vänta på att GitHub Pages publiceras och gör en hård uppdatering med Ctrl+Shift+R. Exportera gärna en backup före uppdatering.
