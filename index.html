@@ -60,12 +60,28 @@ function saveWorkout(){let type=$('workoutType').value,duration=Number($('durati
 function addExercise(){let name=$('newEx').value.trim();if(!name){alert('Ange ett namn på övningen.');return}if(editingExerciseId){let ex=d.exercises.find(x=>x.id===editingExerciseId);if(ex){ex.name=name;ex.cat=$('newCat').value}}else{d.exercises.push({id:'e'+Date.now(),name,cat:$('newCat').value})}cancelExerciseEdit();save();renderEx()}
 function editExercise(id){let ex=d.exercises.find(x=>x.id===id);if(!ex)return;editingExerciseId=id;$('newEx').value=ex.name;$('newCat').value=ex.cat;$('saveExerciseBtn').textContent='Spara ändring';$('cancelEditBtn').classList.remove('hidden');$('newEx').focus();window.scrollTo({top:0,behavior:'smooth'})}
 function cancelExerciseEdit(){editingExerciseId=null;$('newEx').value='';$('newCat').selectedIndex=0;$('saveExerciseBtn').textContent='Spara övning';$('cancelEditBtn').classList.add('hidden')}
-function deleteExercise(id){let ex=d.exercises.find(x=>x.id===id);if(!ex)return;if(!confirm('Ta bort övningen «'+ex.name+'» från din övningslista? Tidigare träningspass och historik sparas.'))return;if(editingExerciseId===id)cancelExerciseEdit();d.exercises=d.exercises.filter(x=>x.id!==id);save();renderEx()}
-function renderEx(){$('exlist').innerHTML=d.exercises.length?sortedExercises().map(e=>'<div class="item"><div><b>'+escapeHtml(e.name)+'</b><span class="sub"> · '+escapeHtml(e.cat)+'</span></div><div class="actions" style="margin-top:9px"><button class="secondary" onclick="editExercise('+JSON.stringify(e.id)+')">Redigera</button><button class="ghost" onclick="deleteExercise('+JSON.stringify(e.id)+')">Ta bort</button></div></div>').join(''):'<div class="empty">Inga övningar ännu. Lägg till din första övning ovan.</div>'}
+function deleteExercise(id){let ex=d.exercises.find(x=>x.id===id);if(!ex)return;if(!confirm('Ta bort övningen «'+ex.name+'» från din övningslista? Tidigare träningspass och historik sparas.'))return;if(editingExerciseId===id)cancelExerciseEdit();d.exercises=d.exercises.filter(x=>String(x.id)!==String(id));d.programs.forEach(p=>p.exerciseIds=(p.exerciseIds||[]).filter(x=>String(x)!==String(id)));persistData().then(()=>{render();renderEx();renderPrograms()})}
+function renderEx(){$('exlist').innerHTML=d.exercises.length?sortedExercises().map(e=>'<div class="item"><div><b>'+escapeHtml(e.name)+'</b><span class="sub"> · '+escapeHtml(e.cat)+'</span></div><div class="actions" style="margin-top:9px"><button type="button" class="secondary" onclick="editExercise(\''+escapeHtml(e.id)+'\')">Redigera</button><button type="button" class="ghost" onclick="deleteExercise(\''+escapeHtml(e.id)+'\')">Ta bort</button></div></div>').join(''):'<div class="empty">Inga övningar ännu. Lägg till din första övning ovan.</div>'}
 function escapeHtml(value){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function renderProgramChoices(selected=[]){let ids=new Set(selected);$('programExerciseChoices').innerHTML=d.exercises.length?sortedExercises().map(e=>'<label class="checkitem"><input type="checkbox" value="'+escapeHtml(e.id)+'" '+(ids.has(e.id)?'checked':'')+'> <span>'+escapeHtml(e.name)+' <span class="sub">· '+escapeHtml(e.cat)+'</span></span></label>').join(''):'<div class="empty">Lägg först till övningar under fliken Övningar.</div>'}
-function saveProgram(){let name=$('programName').value.trim(),exerciseIds=[...new Set([...$('programExerciseChoices').querySelectorAll('input:checked')].map(x=>x.value))];if(!name){alert('Ange ett namn på programmet.');return}if(!exerciseIds.length){alert('Välj minst en övning.');return}if(editingProgramId){let p=d.programs.find(x=>x.id===editingProgramId);if(p){p.name=name;p.exerciseIds=exerciseIds}}else{d.programs.push({id:'p'+Date.now(),name,exerciseIds})}cancelProgramEdit();save();renderPrograms();alert('Träningsprogram sparat.')}
-function editProgram(id){let p=d.programs.find(x=>x.id===id);if(!p)return;editingProgramId=id;$('programName').value=p.name;renderProgramChoices(p.exerciseIds);$('programFormTitle').textContent='Redigera träningsprogram';$('saveProgramBtn').textContent='Spara ändringar';$('cancelProgramBtn').classList.remove('hidden');window.scrollTo({top:0,behavior:'smooth'})}
+async function saveProgram(){
+ const name=$('programName').value.trim();
+ const exerciseIds=[...new Set([...$('programExerciseChoices').querySelectorAll('input[type="checkbox"]:checked')].map(x=>String(x.value)))];
+ if(!name){alert('Ange ett namn på programmet.');$('programName').focus();return;}
+ if(!exerciseIds.length){alert('Välj minst en övning.');return;}
+ if(editingProgramId!==null){
+  const p=d.programs.find(x=>String(x.id)===String(editingProgramId));
+  if(!p){alert('Programmet kunde inte hittas.');return;}
+  p.name=name;p.exerciseIds=exerciseIds;
+ }else{
+  d.programs.push({id:'p'+Date.now(),name,exerciseIds});
+ }
+ await persistData();
+ cancelProgramEdit();
+ renderPrograms();
+ alert('Träningsprogrammet «'+name+'» har sparats.');
+}
+function editProgram(id){let p=d.programs.find(x=>String(x.id)===String(id));if(!p)return;editingProgramId=id;$('programName').value=p.name;renderProgramChoices(p.exerciseIds);$('programFormTitle').textContent='Redigera träningsprogram';$('saveProgramBtn').textContent='Spara ändringar';$('cancelProgramBtn').classList.remove('hidden');window.scrollTo({top:0,behavior:'smooth'})}
 function cancelProgramEdit(){editingProgramId=null;$('programName').value='';$('programFormTitle').textContent='Skapa träningsprogram';$('saveProgramBtn').textContent='Spara program';$('cancelProgramBtn').classList.add('hidden');renderProgramChoices()}
 async function deleteProgram(id){
  let index=d.programs.findIndex(x=>String(x.id)===String(id));
@@ -94,11 +110,13 @@ function startProgram(id){
  alert('Programmet «'+p.name+'» är laddat. Registrera set och repetitioner för första övningen. När du lägger till den väljs nästa övning automatiskt.');
 }
 function renderPrograms(){
- renderProgramChoices(editingProgramId?(d.programs.find(x=>String(x.id)===String(editingProgramId))||{}).exerciseIds||[]:[]);
+ const current=editingProgramId?d.programs.find(x=>String(x.id)===String(editingProgramId)):null;
+ renderProgramChoices(current&&Array.isArray(current.exerciseIds)?current.exerciseIds:[]);
  const programs=sortedPrograms();
  $('programList').innerHTML=programs.length?programs.map(p=>{
   const names=(Array.isArray(p.exerciseIds)?p.exerciseIds:[]).map(id=>d.exercises.find(e=>String(e.id)===String(id))?.name).filter(Boolean);
-  return '<div class="item"><b>'+escapeHtml(p.name)+'</b><div class="sub">'+names.length+' övningar: '+names.map(escapeHtml).join(', ')+'</div><div class="program-actions"><button onclick="startProgram('+JSON.stringify(p.id)+')">Starta program</button><button class="secondary" onclick="editProgram('+JSON.stringify(p.id)+')">Redigera</button><button class="ghost" onclick="deleteProgram('+JSON.stringify(p.id)+')">Ta bort</button></div></div>';
+  const id=escapeHtml(p.id);
+  return '<div class="item"><b>'+escapeHtml(p.name)+'</b><div class="sub">'+names.length+' övningar: '+names.map(escapeHtml).join(', ')+'</div><div class="program-actions"><button type="button" onclick="startProgram(\''+id+'\')">Starta program</button><button type="button" class="secondary" onclick="editProgram(\''+id+'\')">Redigera</button><button type="button" class="ghost" onclick="deleteProgram(\''+id+'\')">Ta bort</button></div></div>';
  }).join(''):'<div class="empty">Du har inga träningsprogram ännu. Skapa ditt första ovan.</div>';
 }
 function backup(){let a=document.createElement('a'),u=URL.createObjectURL(new Blob([JSON.stringify(d,null,2)],{type:'application/json'}));a.href=u;a.download='gymlog-backup-'+today()+'.json';a.click();URL.revokeObjectURL(u)}
